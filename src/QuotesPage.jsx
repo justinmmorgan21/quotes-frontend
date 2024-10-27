@@ -2,49 +2,41 @@ import axios from 'axios'
 import { useState, useEffect } from 'react'
 export function QuotesPage() {
   const [originalQuotes, setOriginalQuotes] = useState([])
-  const [quotes, setQuotes] = useState([])
   const [pageNumber, setPageNumber] = useState(1)
   const [maxPages, setMaxPages] = useState(1);
   const [filterType, setFilterType] = useState("");
   const [search, setSearch] = useState("");
+  const [paginatedQuotes, setPaginatedQuotes] = useState([])
   const quotesPerPage = 15;
 
   const handleQuoteGeneration = () => {
-    console.log("UPDATING QUOTES")
+    console.log("Stage 1")
     axios.get("https://gist.githubusercontent.com/benchprep/dffc3bffa9704626aa8832a3b4de5b27/raw/quotes.json").then(response => {
-      console.log(response.data)
       setOriginalQuotes(response.data)
-      setQuotes(response.data)
     })
   }
 
-  const updateMaxPages = () => {
-    console.log("QUOTES UPDATED")
-    console.log(quotes)
-    setMaxPages(Math.ceil(quotes.length / quotesPerPage))
-  }
-
   const updateQuotes = () => {
-    console.log("UPDATING quotes from FILTER")
     let filteredQuotes = filterType === "" ? originalQuotes : originalQuotes.filter(quote => quote.theme === filterType)
-    setQuotes(filteredQuotes.filter(quote => quote.quote.toLowerCase().includes(search.toLowerCase())))
+    filteredQuotes = filteredQuotes.filter(quote => quote.quote.toLowerCase().includes(search.toLowerCase()))
+    filteredQuotes = filteredQuotes.map((quote,i) => ({actualQuote: quote, number:i+1}))
+    
+    setMaxPages(Math.ceil(filteredQuotes.length / quotesPerPage))
+    setPaginatedQuotes(filteredQuotes.slice(
+      (pageNumber - 1) * quotesPerPage,
+      pageNumber * quotesPerPage))
   }
-
-  const paginatedQuotes = quotes.slice(
-    (pageNumber - 1) * quotesPerPage,
-    pageNumber * quotesPerPage
-  );
 
   useEffect(handleQuoteGeneration, [])
-  useEffect(updateQuotes, [filterType, search])
-  useEffect(updateMaxPages, [quotes])
+  useEffect(updateQuotes, [filterType, search, originalQuotes, pageNumber])
+
   const rows = []
   paginatedQuotes.map((quote,i) => {
     rows.push(
       <div key={i}>
-        <h3>Quote {i+1}:</h3>
-        <p>{quote.quote}</p>
-          <p><span>-{quote.source},</span><span style={{marginLeft: 20}}> {quote.theme.slice(0,-1)}: {quote.context}</span></p>
+        <h3>Quote {quote.number}:</h3>
+        <p>{quote.actualQuote.quote}</p>
+          <p><span>-{quote.actualQuote.source},</span><span style={{marginLeft: 20}}> {quote.actualQuote.theme.slice(0,-1)}: {quote.actualQuote.context}</span></p>
           <hr />
       </div>
     )
@@ -65,7 +57,6 @@ export function QuotesPage() {
     <main>
       <h1>Quotes</h1>
       <div>
-
       <label htmlFor='search'>Search </label>
       <input type='text' name='search' id='search' value={search} onChange={event=>setSearch(event.target.value)}></input>
       </div>

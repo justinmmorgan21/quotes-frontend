@@ -4,18 +4,24 @@ export function QuotesPage() {
   const [quotes, setQuotes] = useState([])
   const [pageNumber, setPageNumber] = useState(1)
   const [maxPages, setMaxPages] = useState(1);
+  const [filterType, setFilterType] = useState("");
   const quotesPerPage = 15;
 
   const handleQuoteGeneration = () => {
+    console.log("UPDATING QUOTES")
     axios.get("https://gist.githubusercontent.com/benchprep/dffc3bffa9704626aa8832a3b4de5b27/raw/quotes.json").then(response => {
       console.log(response.data)
-      setQuotes(response.data)
-      setMaxPages(Math.floor(response.data.length / quotesPerPage + 1))
+      filterType === "" ? setQuotes(response.data) : setQuotes(response.data.filter(quote => quote.theme === filterType))
       console.log(maxPages);
     })
   }
-  useEffect(handleQuoteGeneration, [])
-  // const num = 15
+
+  const updateMaxPages = () => {
+    setMaxPages(Math.floor(quotes.length / quotesPerPage + 1))
+  }
+
+  useEffect(handleQuoteGeneration, [filterType])
+  useEffect(updateMaxPages, [quotes])
   const rows = []
   for (let i = (pageNumber-1)*15; i < quotes.length && i < (pageNumber-1)*15+15; i++) {
     const quote = quotes[i];
@@ -35,9 +41,19 @@ export function QuotesPage() {
     if (newPage >= 1 && newPage <= maxPages)
       setPageNumber(pageNumber + numChange)
   }
+
+  const updateFilter = (filter => {
+    setFilterType(filter);
+    setPageNumber(1);
+  })
+
+
   return (
     <main>
       <h1>Quotes</h1>
+      <button onClick={()=>updateFilter('')}>All Quotes</button>
+      <button onClick={()=>updateFilter('movies')}>Movies</button>
+      <button onClick={()=>updateFilter('games')}>Games</button>
       {rows}
       <p style={{textAlign:'center'}}><span style={{textDecoration:'underline', cursor:'pointer'}} onClick={()=>updatePage(-1)}>{'<<'}</span><span style={{margin:10}}> Page  {pageNumber} </span><span style={{textDecoration:'underline', cursor:'pointer'}} onClick={()=>updatePage(1)}>{'>>'}</span></p>
     </main>
